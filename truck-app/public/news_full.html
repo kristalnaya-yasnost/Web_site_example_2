@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Новость — ГлобалТранс</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">ГлобалТранс</div>
+  <nav><a href="/news.html">Назад к новостям</a></nav>
+</header>
+<main class="container">
+  <div id="full-news"></div>
+</main>
+<script>
+async function load(){
+  const params = new URLSearchParams(location.search);
+  const id = params.get('id');
+  if(!id){ document.getElementById('full-news').innerText='Новость не найдена'; return; }
+  const r = await fetch('/api/news/' + id); const it = await r.json();
+  if(!it){ document.getElementById('full-news').innerText='Новость не найдена'; return; }
+  document.getElementById('full-news').innerHTML = `
+    <h1>${it.title}</h1>
+    <p class="date">${it.date}</p>
+    <img src="${it.image || 'images/placeholder.jpg'}" style="max-width:600px">
+    <div>${it.content}</div>
+  `;
+}
+load();
+</script>
+</body>
+</html>

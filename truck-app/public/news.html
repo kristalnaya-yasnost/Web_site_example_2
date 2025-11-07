@@ -1,0 +1,68 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Новости — ГлобалТранс</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">ГлобалТранс</div>
+  <nav>
+    <a href="/" class="nav-link">Главная</a>
+    <button id="btn-panel" class="nav-btn">Личный кабинет</button>
+  </nav>
+</header>
+
+<main class="container">
+  <h1>Новости компании</h1>
+  <div id="news-list" class="news-list"></div>
+  <div id="manager-controls" style="display:none;">
+    <h3>Управление новостями (только для менеджера)</h3>
+    <form id="news-form">
+      <input name="title" placeholder="Заголовок" required><br>
+      <input name="summary" placeholder="Краткое описание" required><br>
+      <textarea name="content" placeholder="Полный текст" required></textarea><br>
+      <input name="date" type="date"><br>
+      <input name="image" placeholder="путь к изображению (public/images/...)" ><br>
+      <button type="submit" class="primary">Добавить новость</button>
+    </form>
+  </div>
+</main>
+
+<script>
+async function checkRole(){
+  const r = await fetch('/api/me'); const j = await r.json();
+  if(j.logged && j.user.role==='manager') document.getElementById('manager-controls').style.display='block';
+}
+async function loadNews(){
+  const r = await fetch('/api/news'); const items = await r.json();
+  const list = document.getElementById('news-list');
+  list.innerHTML = items.map(it => (
+    `<article class="news-card">
+      <img src="${it.image || 'images/placeholder.jpg'}" alt="">
+      <h2>${it.title}</h2>
+      <p class="date">${it.date}</p>
+      <p>${it.summary}</p>
+      <a href="/news_full.html?id=${it.id}" class="link-btn">Читать полностью</a>
+    </article>`
+  )).join('');
+}
+document.addEventListener('DOMContentLoaded', ()=>{
+  loadNews(); checkRole();
+  const form = document.getElementById('news-form');
+  if(form){
+    form.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const fd = new FormData(form);
+      const body = Object.fromEntries(fd.entries());
+      const res = await fetch('/api/news', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      if(res.ok){ alert('Добавлено'); loadNews(); form.reset(); } else alert('Ошибка');
+    });
+  }
+});
+</script>
+</body>
+</html>

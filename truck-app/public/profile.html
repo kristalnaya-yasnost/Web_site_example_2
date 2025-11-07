@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Профиль — ГлобалТранс</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">ГлобалТранс</div>
+  <nav id="topnav"></nav>
+</header>
+<main class="container">
+  <div id="profile-area"></div>
+</main>
+
+<script>
+async function getMe(){ const r = await fetch('/api/me'); return r.json(); }
+
+function el(tag, html, cls){ const e = document.createElement(tag); if(html) e.innerHTML = html; if(cls) e.className = cls; return e; }
+
+async function load(){
+  const me = await getMe();
+  if(!me.logged){ location.href = '/'; return; }
+  const role = me.user.role;
+  // top nav
+  const nav = document.getElementById('topnav');
+  if(role==='driver'){
+    nav.innerHTML = '<button class="nav-btn" onclick="location.reload()">Мои рейсы</button><button class="nav-btn" onclick="logout()">Выйти</button>';
+  } else {
+    nav.innerHTML = '<button class="nav-btn" onclick="showOrders()">Заказы</button><button class="nav-btn" onclick="showDrivers()">Водители и транспорт</button><button class="nav-btn" onclick="showReports()">Отчёты</button><button class="nav-btn" onclick="logout()">Выйти</button>';
+  }
+
+  const area = document.getElementById('profile-area');
+  if(role==='driver'){
+    area.innerHTML = '<h2>Профиль водителя</h2><div id="driver-info"></div><h3>Мои рейсы</h3><div id="driver-orders"></div>';
+    // load driver info and orders
+    const drvId = me.user.driver_id;
+    const dr = await fetch('/api/drivers'); const drivers = await dr.json();
+    const driver = drivers.find(d=>d.id===drvId) || drivers[0];
+    document.getElementById('driver-info').innerHTML = `<p>${driver.name}</p><p>Опыт: ${driver.experience} лет</p>`;
+    const ord = await fetch('/api/orders'); const orders = await ord.json();
+    const my = orders.filter(o=>o.driver_id===drvId);
+    document.getElementById('driver-orders').innerHTML = '<table class="table">'+
+      '<tr><th>№</th><th>Направление</th><th>Дата</th><th>Сумма</th></tr>' +
+      my.map(o=>`<tr><td>${o.id}</td><td>${o.direction}</td><td>${o.date_departure}</td><td>${o.sum} ₽</td></tr>`).join('') + '</table>';
+  } else {
+    area.innerHTML = '<h2>Панель менеджера</h2><div id="mgr-area"></div>';
+    showOrders();
+  }
+}
+
+async function showOrders(){
+  const a = document.getElementById('mgr-area');
+  a.innerHTML = '<h3>Заказы</h3><div><button onclick="newOrder()" class="primary">Новый заказ</button></div><div id="orders-table"></div>';
+  const res = await fetch('/api/orders'); const rows = await res.json();
+  const table = '<table class="table"><tr><th>№</th><th>Направление</th><th>Дата отправки</th><th>Водитель</th><th>Автомобиль</th><th>Сумма</th></tr>' +
+    rows.map(r=>`<tr><td>${r.id}</td><td>${r.direction}</td><td>${r.date_departure}</td><td>${r.driver_name||''}</td><td>${r.vehicle_model||''}</td><td>${r.sum}</td></tr>`).join('') + '</table>';
+  document.getElementById('orders-table').innerHTML = table;
+}
+
+async function showDrivers(){
+  const a = document.getElementById('mgr-area');
+  a.innerHTML = '<h3>Водители и транспорт</h3><div id="drv-list"></div>';
+  const r = await fetch('/api/drivers'); const drivers = await r.json();
+  const v = await fetch('/api/vehicles'); const vehicles = await v.json();
+  document.getElementById('drv-list').innerHTML = '<h4>Водители</h4>' + drivers.map(d=>`<div class="card">${d.name} — ${d.phone}</div>`).join('') +
+    '<h4>Транспорт</h4>' + vehicles.map(v=>`<div class="card">${v.model} — ${v.reg_number}</div>`).join('');
+}
+
+function newOrder(){
+  alert('Форма создания нового заказа (реализуйте как modal)');
+}
+
+function logout(){ fetch('/api/logout',{method:'POST'}).then(()=>location.href='/'); }
+
+document.addEventListener('DOMContentLoaded', load);
+</script>
+</body>
+</html>
