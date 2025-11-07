@@ -1,17 +1,13 @@
 // init_db.js
 const sqlite3 = require('sqlite3').verbose();
-import path from 'path';
-import { fileURLToPath } from 'url';
-import sqlite3 from 'sqlite3';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const path = require('path');
+const fs = require('fs');
 
 // создаём папку для базы, если её нет
-import fs from 'fs';
 const dataDir = path.join(__dirname, 'data');
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir);
+  console.log('Папка data создана');
 }
 
 // создаём/открываем файл базы в data/
@@ -19,6 +15,7 @@ const dbPath = path.join(dataDir, 'database.db');
 const db = new sqlite3.Database(dbPath);
 
 db.serialize(() => {
+  // таблица пользователей
   db.run(`CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE,
@@ -26,6 +23,7 @@ db.serialize(() => {
     role TEXT
   )`);
 
+  // таблица новостей
   db.run(`CREATE TABLE IF NOT EXISTS news (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT,
@@ -33,18 +31,21 @@ db.serialize(() => {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
+  // таблица водителей
   db.run(`CREATE TABLE IF NOT EXISTS drivers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT,
     phone TEXT
   )`);
 
+  // таблица грузовиков
   db.run(`CREATE TABLE IF NOT EXISTS trucks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     model TEXT,
     plate_number TEXT
   )`);
 
+  // таблица заказов
   db.run(`CREATE TABLE IF NOT EXISTS orders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     driver_id INTEGER,
@@ -55,11 +56,10 @@ db.serialize(() => {
   )`);
 });
 
-// ✅ Делаем закрытие базы только после полной инициализации
 db.close(err => {
   if (err) {
-    console.error('Ошибка при закрытии БД:', err.message);
+    console.error('❌ Ошибка при закрытии БД:', err.message);
   } else {
-    console.log('База данных успешно инициализирована.');
+    console.log('✅ База данных успешно инициализирована.');
   }
 });
